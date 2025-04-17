@@ -33,5 +33,13 @@ pipeline {
                 '''
             }
         }    
+        stage('Build My Docker Image') {
+            steps {
+                sh '''
+                docker build -t my-react-app .
+                docker images
+                '''
+            }
+        }
     }
 }    
