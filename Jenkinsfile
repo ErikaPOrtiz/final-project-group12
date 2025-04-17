@@ -64,6 +64,7 @@ pipeline {
                     docker push $ECR_REPO:latest
                     '''
                 }
-            }   
+            }
+        }       
     }
 }    
