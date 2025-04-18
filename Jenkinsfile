@@ -1,8 +1,9 @@
 pipeline {
     agent any
     environment {
-        AWS_REGION = 'us-east-1'
-        ECR_REPO = '048201425592.dkr.ecr.us-east-1.amazonaws.com/final-project-group12'
+        AWS_DOCKER_REGISTRY = '048201425592.dkr.ecr.us-east-1.amazonaws.com'
+        APP_NAME = 'final-project-group12'
+        AWS_DEFAULT_REGION = 'us-east-1'
         }
     stages {
         stage('Build') {
@@ -40,27 +41,40 @@ pipeline {
         stage('Build My Docker Image') {
              agent {
                 docker {
-                    image 'python:3.11-slim'
+                    image 'amazon/aws-cli'
                     reuseNode true
+                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
                 }
             }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-ecr-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([usernamePassword(credentialsId: 'FinalProject', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
-                    pip install --upgrade awscli
-
-                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                    aws configure set default.region $AWS_REGION
-
-                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-
-                    docker build -t my-react-app .
-                    docker tag my-react-app:latest $ECR_REPO:latest
-                    docker push $ECR_REPO:latest
+                    amazon-linux-extras install docker  
+                    docker build -t $AWS_DOCKER_REGISTRY/$APP_NAME .
+                    aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_DOCKER_REGISTRY
+                    docker push $AWS_DOCKER_REGISTRY/$APP_NAME:latest
                     '''
                 }
             }
         }
+        stage ('Deploy to AWS'){
+            agent{
+                docker{
+                    image 'amazon/aws-cli'
+                    reuseNode true
+                    args '-u root --entrypoint=""'
+                }
+            }
+            steps{
+                 withCredentials([usernamePassword(credentialsId: 'FinalProject', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh'''
+                        aws --version
+                        yum install jq -y
+                        LATEST_TD_VERSION=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition.json | jq 'taskDefinition.revision')
+                        aws ecs update-service --cluster FinalProject --service FinalProject --task-definition FinalProject:$Latest_TD_REVISION
+                    '''
+                }    
+            }
+        }   
     }
-}    
+}
