@@ -71,7 +71,7 @@ pipeline {
                         aws --version
                         yum install jq -y
                         LATEST_TD_VERSION=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition.json | jq -r '.taskDefinition.revision')
-                        aws ecs update-service --cluster FinalProject --service FinalProject --task-definition FinalProject:$LATEST_TD_VERSION
+                        aws ecs update-service --cluster FinalProject --service Final-Project-Service --task-definition FinalProject:$LATEST_TD_VERSION
                     '''
                 }    
             }
