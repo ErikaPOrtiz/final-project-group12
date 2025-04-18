@@ -2,7 +2,7 @@
     "requiresCompatibilities":[
         "FARGATE"
     ],
-    "family": "Temp-TaskDefinition-Prod",
+    "family": "FinalProject",
     "containerDefinitions": [
         {
                 "name": "FinalProject",
